@@ -1,7 +1,7 @@
 package roflsoft
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.{ ActorMaterializer, Materializer }
 import monix.execution.Scheduler
 import monix.execution.schedulers.SchedulerService
 
@@ -13,6 +13,6 @@ package object implicits {
   }
 
   object monix {
-    implicit lazy val scheduler: SchedulerService = Scheduler.fixedPool(name="fixed", poolSize=10)
+    implicit lazy val scheduler: SchedulerService = Scheduler.fixedPool(name = "fixed", poolSize = 10)
   }
 }

@@ -1,6 +1,6 @@
 package roflsoft.models.enums
 
-import io.roflsoft.enums.{Entry, Enum}
+import io.roflsoft.enums.{ Entry, Enum }
 
 sealed abstract class Country(val entry: String) extends Entry(entry)
 case object Country extends Enum[Country] {
