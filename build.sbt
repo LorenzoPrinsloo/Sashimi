@@ -2,6 +2,8 @@ lazy val akkaHttpVersion = "10.1.11"
 lazy val akkaVersion     = "2.5.26"
 lazy val circeVersion    = "0.12.0"
 
+mainClass in assembly := Some("roflsoft.Server")
+
 lazy val root = (project in file(".")).
   settings(
     commands ++= Seq(CodeGen.crud),
@@ -16,6 +18,7 @@ lazy val root = (project in file(".")).
     name := "sashimi",
     resolvers += "jitpack".at("https://jitpack.io"),
     libraryDependencies ++= Seq(
+      "com.github.t3hnar" %% "scala-bcrypt" % "4.1",
       "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-xml"        % akkaHttpVersion,

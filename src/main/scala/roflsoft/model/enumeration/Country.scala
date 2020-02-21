@@ -1,4 +1,4 @@
-package roflsoft.models.enums
+package roflsoft.model.enumeration
 
 import io.roflsoft.enums.{ Entry, Enum }
 
