@@ -15,6 +15,9 @@ lazy val root = (project in file(".")).
       "WEB_INTERFACE" -> "localhost",
       "WEB_PORT" -> "9000"
     ),
+    scalacOptions ++= Seq(
+      "-language:postfixOps"
+    ),
     name := "sashimi",
     resolvers += "jitpack".at("https://jitpack.io"),
     libraryDependencies ++= Seq(
@@ -31,7 +34,8 @@ lazy val root = (project in file(".")).
       "io.circe" %% "circe-literal"  % circeVersion,
       "io.circe" %% "circe-optics"  % circeVersion,
       "io.monix" %% "monix" % "3.1.0",
-      "org.tpolecat" %% "doobie-core" % "0.8.7",
+      "org.tpolecat" %% "doobie-core" % "0.8.8",
+      "org.tpolecat" %% "doobie-quill" % "0.8.8",
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
       "org.postgresql" % "postgresql" % "42.2.8",
       "io.roflsoft" %% "sushi" % "0.0.2",
@@ -39,6 +43,8 @@ lazy val root = (project in file(".")).
       "net.debasishg" %% "redisclient" % "3.10",
       "com.beachape" % "enumeratum_2.13" % "1.5.14",
       "com.beachape" % "enumeratum-doobie_2.13" % "1.5.16",
+      "io.getquill" % "quill-core_2.13" % "3.5.0",
+      "com.beachape" %% "enumeratum-quill" % "1.5.15",
       "com.beachape" % "enumeratum-circe_2.13" % "1.5.21",
       "org.scalatest" %% "scalatest" % "3.1.0" % Test,
       "io.circe" %% "circe-json-schema" % "0.1.0",

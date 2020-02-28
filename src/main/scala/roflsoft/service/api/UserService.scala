@@ -1,8 +1,8 @@
 package roflsoft.service.api
 
-import cats.data.{EitherT, NonEmptyChain}
+import cats.data.{ EitherT, NonEmptyChain }
 import roflsoft.model.User
-import roflsoft.model.request.{UserLoginRequest, UserRegisterRequest}
+import roflsoft.model.request.{ UserLoginRequest, UserRegisterRequest }
 import roflsoft.model.response.UserLoginResponse
 import roflsoft.model.response.common.ErrorPayload
 
