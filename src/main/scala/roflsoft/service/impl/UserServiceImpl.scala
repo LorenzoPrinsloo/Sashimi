@@ -5,14 +5,13 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.data.{ EitherT, Nested }
 import com.google.inject.Inject
 import io.roflsoft.validation.FormValidator
-import io.roflsoft.db.{ complete, completeStream }
 import io.roflsoft.db.transactorStore.taskTransactor
 import io.roflsoft.db.transactorStore.taskStreamListConverter
+import io.roflsoft.db.conversion._
 import monix.execution.Scheduler.Implicits.global
 import monix.eval.Task
 import roflsoft.model.request.{ UserLoginRequest, UserRegisterRequest }
 import roflsoft.service.api.UserService
-import io.roflsoft.db.PostgresRepository
 import roflsoft.model.User
 import roflsoft.model.enumeration.Country
 import roflsoft.model.response.common.ErrorPayload
@@ -47,12 +46,12 @@ class UserServiceImpl @Inject() (
   def register(request: UserRegisterRequest): EitherT[Task, ErrorPayload, User] = {
     for {
       validatedRequest <- validateRegisterRequest(request)
-      user <- EitherT(complete(createUser(validatedRequest).value))
+      user <- EitherT(createUser(validatedRequest).value.runAs[Task])
     } yield user
   }
 
   private def findUser(emailAddress: String): EitherT[Task, ErrorPayload, User] = EitherT {
-    completeStream(userRepo.findByEmail(emailAddress))
+    userRepo.findByEmail(emailAddress).runAs[Task, List]
       .map { users =>
         users.headOption.toRight(ErrorPayload("User not found.", StatusCodes.NotFound))
       }
