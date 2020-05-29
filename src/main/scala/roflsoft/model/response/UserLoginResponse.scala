@@ -1,5 +1,3 @@
 package roflsoft.model.response
 
-import io.roflsoft.http.authentication.Session
-
-case class UserLoginResponse(session: Session)
+case class UserLoginResponse(userId: Long, token: String)

@@ -1,13 +1,12 @@
 package roflsoft.service.impl
 
+import java.sql.SQLException
+
 import scala.concurrent.duration._
 import akka.http.scaladsl.model.StatusCodes
 import cats.data.{ EitherT, Nested }
 import com.google.inject.Inject
 import io.roflsoft.validation.FormValidator
-import io.roflsoft.db.transactorStore.taskTransactor
-import io.roflsoft.db.transactorStore.taskStreamListConverter
-import io.roflsoft.db.conversion._
 import monix.execution.Scheduler.Implicits.global
 import monix.eval.Task
 import roflsoft.model.request.{ UserLoginRequest, UserRegisterRequest }
@@ -16,42 +15,40 @@ import roflsoft.model.User
 import roflsoft.model.enumeration.Country
 import roflsoft.model.response.common.ErrorPayload
 import roflsoft.model.response.UserLoginResponse
-import cats.implicits._
+import cats.syntax.either._
 import com.github.t3hnar.bcrypt._
-import doobie.implicits._
-import io.roflsoft.http.authentication.{ AuthToken, Session }
-import doobie._
-import roflsoft.database.UserRepository
-
+import doobie.free.connection.ConnectionIO
+import doobie.quill.DoobieContext
+import io.getquill.Escape
+import io.roflsoft.http.authentication.AuthToken
+import io.roflsoft.stream.syntax.StreamConverterSyntax.MonixIOStreamConversion
+import io.roflsoft.stream.typeclass.StreamConverter.task.taskStreamListConverter
+import io.roflsoft.db.conversion._
+import roflsoft.database.{ Repository, UserRepository, asyncDatabaseTransactor }
+import octopus.syntax._
 import scala.language.postfixOps
 import scala.languageFeature.postfixOps
 
-class UserServiceImpl @Inject() (
-  registerValidator: FormValidator[UserRegisterRequest],
-  userRepo: UserRepository)
-  extends UserService[Task] {
+class UserServiceImpl @Inject() (userRepo: UserRepository) extends UserService[Task] {
 
-  private def validateRegisterRequest(request: UserRegisterRequest): EitherT[Task, ErrorPayload, UserRegisterRequest] =
-    EitherT.fromEither[Task](registerValidator.validateForm(request).toEither.leftMap(ErrorPayload.apply))
+  private def validateRegisterRequest(request: UserRegisterRequest): EitherT[Task, ErrorPayload, UserRegisterRequest] = {
+    EitherT.fromEither[Task](request.validate.toEither.leftMap(ErrorPayload.apply))
+  }
 
-  private def createUser(request: UserRegisterRequest): EitherT[ConnectionIO, ErrorPayload, User] = {
-    request.password.bcryptSafe(2).toEither.map { hashedPassword =>
-      User(request.email, hashedPassword, Country.ZA, 1L)
-    } match {
-      case Left(value) => EitherT.fromEither[ConnectionIO](ErrorPayload.apply(value).asLeft)
-      case Right(user) => EitherT.liftF(userRepo.add(user).map(_ => user))
-    }
+  private def createUser(request: UserRegisterRequest): EitherT[Task, SQLException, User] = EitherT {
+    val user = User(request.email, request.password.bcrypt, Country.ZA, 2L)
+    completeSafe(userRepo.create(User(request.email, request.password.bcrypt, Country.ZA, 2L)))
   }
 
   def register(request: UserRegisterRequest): EitherT[Task, ErrorPayload, User] = {
-    for {
+    (for {
       validatedRequest <- validateRegisterRequest(request)
-      user <- EitherT(createUser(validatedRequest).value.runAs[Task])
-    } yield user
+      user <- createUser(validatedRequest).leftMap(ErrorPayload.apply)
+    } yield user)
   }
 
   private def findUser(emailAddress: String): EitherT[Task, ErrorPayload, User] = EitherT {
-    userRepo.findByEmail(emailAddress).runAs[Task, List]
+    userRepo.findByEmail(emailAddress).runAs[List]
       .map { users =>
         users.headOption.toRight(ErrorPayload("User not found.", StatusCodes.NotFound))
       }
@@ -64,20 +61,10 @@ class UserServiceImpl @Inject() (
     } yield response
   }
 
-  private def invalidateUserSessions(user: User): EitherT[Task, ErrorPayload, List[Session]] = {
-    ???
-  }
-
-  private def createSession(authToken: AuthToken, user: User): EitherT[Task, ErrorPayload, Session] = {
-    ???
-  }
-
   def login(request: UserLoginRequest): EitherT[Task, ErrorPayload, UserLoginResponse] = {
     for {
       user <- findUser(request.emailAddress)
       authToken <- validatePassword(request.password, user)
-      _ <- invalidateUserSessions(user)
-      session <- createSession(authToken, user)
-    } yield UserLoginResponse(session)
+    } yield UserLoginResponse(user.id, authToken.access_token)
   }
 }

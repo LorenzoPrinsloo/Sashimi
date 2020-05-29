@@ -1,20 +1,18 @@
 package roflsoft.database
 
 import com.google.inject.Inject
-import io.roflsoft.db.Repository
 import roflsoft.model.User
-import io.roflsoft.db.transactorStore.taskTransactor
-import io.roflsoft.db.transactorStore.taskStreamListConverter
-import monix.execution.Scheduler.Implicits.global
-import io.roflsoft.db.doobieCtx._
 import doobie._
 import fs2._
+import io.getquill._
+import cats.implicits._
 
-class UserRepository @Inject() () {
+class UserRepository @Inject() () extends Repository[User] {
+  import ctx._
 
-  def add(user: User): ConnectionIO[Long] = run {
+  def create(user: User): ConnectionIO[User] = run {
     quote {
-      query[User].insert(lift(user))
+      query[User].insert(lift(user)).returning(user => user)
     }
   }
 

@@ -1,16 +1,21 @@
 package roflsoft.model.response.common
 
+import java.sql.SQLException
 import akka.http.scaladsl.model.{ StatusCode, StatusCodes }
-import cats.data.NonEmptyChain
-import io.roflsoft.validation.ValidationError
+import cats.implicits._
+import octopus.ValidationError
 
-case class ErrorPayload(message: String, code: StatusCode, data: Option[NonEmptyChain[Exception]] = None) extends Exception
+case class ErrorPayload(message: String, code: String, data: List[String] = List.empty[String])
 object ErrorPayload {
 
-  def apply(nonEmptyChain: NonEmptyChain[ValidationError]): ErrorPayload = {
-    new ErrorPayload("Invalid Request.", StatusCodes.BadRequest, Some(nonEmptyChain))
+  def apply(errors: List[ValidationError]): ErrorPayload = {
+    new ErrorPayload("Invalid Request.", StatusCodes.BadRequest.defaultMessage, errors.map(_.message))
   }
 
-  def apply(throwable: Throwable): ErrorPayload = new ErrorPayload(s"Internal Server Error ${throwable.getLocalizedMessage}.", StatusCodes.InternalServerError)
+  def apply(sqlException: SQLException): ErrorPayload = new ErrorPayload(sqlException.getMessage, StatusCodes.InternalServerError.defaultMessage)
+
+  def apply(message: String, code: StatusCode): ErrorPayload = new ErrorPayload(message, code.defaultMessage())
+
+  def apply(throwable: Throwable): ErrorPayload = new ErrorPayload(s"Internal Server Error ${throwable.getLocalizedMessage}.", StatusCodes.InternalServerError.defaultMessage)
 }
 
