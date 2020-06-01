@@ -20,11 +20,7 @@ class CoreModule extends AbstractModule with ScalaModule {
     /** Repositories */
     bind[UserRepository]
 
-    /** Form Validators */
-    //    bind[UserRegisterValidator]
-
     /** Services */
     bind[UserService[Task]].to[UserServiceImpl]
-
   }
 }

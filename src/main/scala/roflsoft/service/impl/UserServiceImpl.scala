@@ -36,8 +36,9 @@ class UserServiceImpl @Inject() (userRepo: UserRepository) extends UserService[T
   }
 
   private def createUser(request: UserRegisterRequest): EitherT[Task, SQLException, User] = EitherT {
-    val user = User(request.email, request.password.bcrypt, Country.ZA, 2L)
-    completeSafe(userRepo.create(User(request.email, request.password.bcrypt, Country.ZA, 2L)))
+    completeSafe(
+      userRepo.create(User(request.email, request.password.bcrypt, Country.ZA, 2L))
+    )
   }
 
   def register(request: UserRegisterRequest): EitherT[Task, ErrorPayload, User] = {
@@ -54,7 +55,7 @@ class UserServiceImpl @Inject() (userRepo: UserRepository) extends UserService[T
       }
   }
 
-  private def validatePassword(password: String, foundUser: User): EitherT[Task, ErrorPayload, AuthToken] = EitherT.fromEither[Task] {
+  private def authenticatePassword(password: String, foundUser: User): EitherT[Task, ErrorPayload, AuthToken] = EitherT.fromEither[Task] {
     for {
       isUser <- password.isBcryptedSafe(foundUser.hashedPassword).toEither.leftMap(ErrorPayload.apply)
       response <- Either.cond(isUser, AuthToken(expires_in = 10 minutes), ErrorPayload("Invalid password for user.", StatusCodes.Unauthorized))
@@ -64,7 +65,7 @@ class UserServiceImpl @Inject() (userRepo: UserRepository) extends UserService[T
   def login(request: UserLoginRequest): EitherT[Task, ErrorPayload, UserLoginResponse] = {
     for {
       user <- findUser(request.emailAddress)
-      authToken <- validatePassword(request.password, user)
+      authToken <- authenticatePassword(request.password, user)
     } yield UserLoginResponse(user.id, authToken.access_token)
   }
 }
