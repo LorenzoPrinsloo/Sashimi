@@ -11,10 +11,10 @@ import monix.execution.Scheduler.Implicits.global
 import monix.eval.Task
 import roflsoft.model.request.{ UserLoginRequest, UserRegisterRequest }
 import roflsoft.service.api.UserService
-import roflsoft.model.User
+import roflsoft.model.{ Permission, Role, User, UserRole }
 import roflsoft.model.enumeration.Country
 import roflsoft.model.response.common.ErrorPayload
-import roflsoft.model.response.UserLoginResponse
+import roflsoft.model.response.{ UserLoginResponse, UserRegisterResponse }
 import cats.syntax.either._
 import com.github.t3hnar.bcrypt._
 import doobie.free.connection.ConnectionIO
@@ -24,27 +24,39 @@ import io.roflsoft.http.authentication.AuthToken
 import io.roflsoft.stream.syntax.StreamConverterSyntax.MonixIOStreamConversion
 import io.roflsoft.stream.typeclass.StreamConverter.task.taskStreamListConverter
 import io.roflsoft.db.conversion._
-import roflsoft.database.{ Repository, UserRepository, asyncDatabaseTransactor }
+import roflsoft.database.{ Repository, asyncDatabaseTransactor }
 import octopus.syntax._
+import roflsoft.database.repository.{ RoleRepository, UserRepository }
+import fs2.Stream
+
 import scala.language.postfixOps
 import scala.languageFeature.postfixOps
+import scala.util.Random
 
-class UserServiceImpl @Inject() (userRepo: UserRepository) extends UserService[Task] {
+class UserServiceImpl @Inject() (userRepo: UserRepository, roleRepo: RoleRepository) extends UserService[Task] {
 
   private def validateRegisterRequest(request: UserRegisterRequest): EitherT[Task, ErrorPayload, UserRegisterRequest] = {
     EitherT.fromEither[Task](request.validate.toEither.leftMap(ErrorPayload.apply))
   }
 
-  private def createUser(request: UserRegisterRequest): EitherT[Task, SQLException, User] = EitherT {
-    completeSafe(
-      userRepo.create(User(request.email, request.password.bcrypt, Country.ZA, 2L))
-    )
+  private def createUserWithRoles(request: UserRegisterRequest): Task[UserRegisterResponse] = {
+    completeStream[Permission, Task, List] {
+      Stream.eval(userRepo.create(User(request.email, request.password.bcrypt, Country.ZA, new Random().nextInt().toLong)))
+        .flatMap { user =>
+          userRepo.activateRolesForUser(user.id, request.roleIds: _*)
+            .flatMap(userRole => roleRepo.findPermissions(userRole.roleId))
+        }
+    }.map { permissions =>
+      val permissionNames: List[String] = permissions.map(_.name)
+
+      UserRegisterResponse(request.email, Country.ZA, permissionNames)
+    }
   }
 
-  def register(request: UserRegisterRequest): EitherT[Task, ErrorPayload, User] = {
+  def register(request: UserRegisterRequest): EitherT[Task, ErrorPayload, UserRegisterResponse] = {
     (for {
       validatedRequest <- validateRegisterRequest(request)
-      user <- createUser(validatedRequest).leftMap(ErrorPayload.apply)
+      user <- EitherT.liftF(createUserWithRoles(validatedRequest))
     } yield user)
   }
 

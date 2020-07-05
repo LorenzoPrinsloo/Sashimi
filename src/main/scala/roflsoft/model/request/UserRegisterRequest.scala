@@ -2,7 +2,7 @@ package roflsoft.model.request
 
 import octopus.dsl._
 
-case class UserRegisterRequest(email: String, password: String)
+case class UserRegisterRequest(email: String, password: String, roleIds: List[Long])
 object UserRegisterRequest {
 
   implicit val userRegisterValidator: Validator[UserLoginRequest] = Validator[UserLoginRequest]

@@ -8,5 +8,5 @@ case object Country extends Enum[Country] {
   case object ENG extends Country("England")
   case object USA extends Country("United States of America")
 
-  val values = findValues
+  val values: IndexedSeq[Country] = findValues
 }

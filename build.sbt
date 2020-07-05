@@ -6,7 +6,6 @@ mainClass in assembly := Some("roflsoft.Server")
 
 lazy val root = (project in file(".")).
   settings(
-    commands ++= Seq(CodeGen.crud),
     inThisBuild(List(
       organization    := "roflsoft",
       scalaVersion    := "2.13.0"
@@ -39,7 +38,7 @@ lazy val root = (project in file(".")).
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
       "org.postgresql" % "postgresql" % "42.2.8",
       "io.getquill" %% "quill-jdbc-monix" % "3.5.1",
-      "io.roflsoft" %% "sushi" % "0.0.5",
+      "io.roflsoft" %% "sushi" % "0.0.6",
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "net.debasishg" %% "redisclient" % "3.10",
       "com.beachape" % "enumeratum-circe_2.13" % "1.5.21",

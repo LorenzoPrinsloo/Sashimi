@@ -9,8 +9,9 @@ import io.roflsoft.http.authentication.Session
 import io.roflsoft.validation.FormValidator
 import monix.eval.Task
 import net.codingwell.scalaguice.ScalaModule
-import roflsoft.database.{ Repository, UserRepository }
-import roflsoft.model.User
+import roflsoft.database.Repository
+import roflsoft.database.repository.{ PermissionRepository, RoleRepository, UserRepository }
+import roflsoft.model.{ RolePermission, User, UserRole }
 import roflsoft.model.request.UserRegisterRequest
 import roflsoft.service.api.UserService
 import roflsoft.service.impl.UserServiceImpl
@@ -19,6 +20,8 @@ class CoreModule extends AbstractModule with ScalaModule {
   override def configure(): Unit = {
     /** Repositories */
     bind[UserRepository]
+    bind[RoleRepository]
+    bind[PermissionRepository]
 
     /** Services */
     bind[UserService[Task]].to[UserServiceImpl]
